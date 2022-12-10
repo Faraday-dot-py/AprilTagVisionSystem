@@ -37,4 +37,6 @@ class AprilTag:
             refine_edges=refineEdges,
             decode_sharpening=decodeSharpening)
 
-    def detectTags(img, maxTags = -1)
+    def detectTags(img, maxTags = -1):
+        #Do an assertion here to check if the image provided is indeed an image
+        assert img.type == 
