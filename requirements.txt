@@ -1,4 +1,4 @@
-opencv-python
-pynetworktables
+opencv-python~=4.6.0.66
+pynetworktables~=2021.0.0
 pupil-apriltags
 opencv-python
