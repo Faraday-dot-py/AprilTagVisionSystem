@@ -3,15 +3,9 @@ import time
 
 import cv2
 from pupil_apriltags import Detector
+import numpy as np
+from PIL import Image, ImageEnhance
 
-at_detector = Detector(
-    families="tag16h5",
-    nthreads=1,
-    quad_decimate=1.0,
-    quad_sigma=0.0,
-    refine_edges=1,
-    decode_sharpening=0.25
-)
 
 
 class AprilTag:
@@ -29,11 +23,13 @@ class AprilTag:
 
     def __init__(self,
                  families="tag16h5",
-                 nThreads=1,
-                 quadDecimate=1.0,
+                 nThreads=6,
+                 quadDecimate=0.0,
                  quadSigma=0.0,
                  refineEdges=1,
-                 decodeSharpening=0.25):
+                 decodeSharpening=1.0,
+                 cameraChannel = 0):
+
         self.detector = Detector(families=families,
                                  nthreads=nThreads,
                                  quad_decimate=quadDecimate,
@@ -41,84 +37,88 @@ class AprilTag:
                                  refine_edges=refineEdges,
                                  decode_sharpening=decodeSharpening)
 
-    # def detectTags(img, maxTags = -1)
+        self.cap = cv2.VideoCapture(cameraChannel)
 
+    def detectTags(self, img, maxTags = -1):
+        return self.detector.detect(img)
 
-# OMG ITS SO MESSY
+    def draw_tags(self, image, tags):
+        for tag in tags:
+            tag_family = tag.tag_family
+            tag_id = tag.tag_id
+            center = tag.center
+            corners = tag.corners
 
-def main():
-    cap = cv2.VideoCapture(0)
+            center = (int(center[0]), int(center[1]))
+            corner_01 = (int(corners[0][0]), int(corners[0][1]))
+            corner_02 = (int(corners[1][0]), int(corners[1][1]))
+            corner_03 = (int(corners[2][0]), int(corners[2][1]))
+            corner_04 = (int(corners[3][0]), int(corners[3][1]))
 
-    elapsed_time = 0
+            cv2.circle(image, (center[0], center[1]), 5, (0, 0, 255), 2)
 
-    while True:
-        start_time = time.time()
+            cv2.line(image, (corner_01[0], corner_01[1]),
+                    (corner_02[0], corner_02[1]), (255, 0, 0), 2)
+            cv2.line(image, (corner_02[0], corner_02[1]),
+                    (corner_03[0], corner_03[1]), (255, 0, 0), 2)
+            cv2.line(image, (corner_03[0], corner_03[1]),
+                    (corner_04[0], corner_04[1]), (0, 255, 0), 2)
+            cv2.line(image, (corner_04[0], corner_04[1]),
+                    (corner_01[0], corner_01[1]), (0, 255, 0), 2)
 
-        ret, image = cap.read()
+        return image
+
+    def getImage(self, enhancementFactor = 1):
+        # Read the captured image
+        ret, image = self.cap.read()
+
+        # Make sure that the image was captured successfully
         if not ret:
-            break
-        debug_image = copy.deepcopy(image)
+            raise SystemExit("Ret not found [Im on line 55 :)]")
 
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        tags = at_detector.detect(
-            image,
-            estimate_tag_pose=False,
-            camera_params=None,
-            tag_size=None,
-        )
+        # Convert to grayscale
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        debug_image = draw_tags(debug_image, tags, elapsed_time)
+        # Convert cv2 image to a format PIL can understand
+        im_pil = Image.fromarray(gray)
 
-        elapsed_time = time.time() - start_time
+        # Create an instance of the image enhancer
+        enhancer = ImageEnhance.Contrast(im_pil)
 
-        key = cv2.waitKey(1)
-        if key == 27:  # ESC
-            break
+        # Enhance image with the wonderful PIL library <3
+        enhanced = enhancer.enhance(enhancementFactor)
 
-        cv2.imshow('AprilTag Detect Demo', debug_image)
+        # Convert back to cv2 format
+        im_np = np.asarray(enhanced)
 
-    cap.release()
-    cv2.destroyAllWindows()
+        return im_np
 
+    def main(self):
+        while True:
+            sTime = time.time()
+            img = self.getImage()
 
-def draw_tags(
-        image,
-        tags,
-        elapsed_time,
-):
-    for tag in tags:
-        tag_family = tag.tag_family
-        tag_id = tag.tag_id
-        center = tag.center
-        corners = tag.corners
-
-        center = (int(center[0]), int(center[1]))
-        corner_01 = (int(corners[0][0]), int(corners[0][1]))
-        corner_02 = (int(corners[1][0]), int(corners[1][1]))
-        corner_03 = (int(corners[2][0]), int(corners[2][1]))
-        corner_04 = (int(corners[3][0]), int(corners[3][1]))
-
-        cv2.circle(image, (center[0], center[1]), 5, (0, 0, 255), 2)
-
-        cv2.line(image, (corner_01[0], corner_01[1]),
-                 (corner_02[0], corner_02[1]), (255, 0, 0), 2)
-        cv2.line(image, (corner_02[0], corner_02[1]),
-                 (corner_03[0], corner_03[1]), (255, 0, 0), 2)
-        cv2.line(image, (corner_03[0], corner_03[1]),
-                 (corner_04[0], corner_04[1]), (0, 255, 0), 2)
-        cv2.line(image, (corner_04[0], corner_04[1]),
-                 (corner_01[0], corner_01[1]), (0, 255, 0), 2)
-
-        cv2.putText(image, str(tag_id), (center[0] - 10, center[1] - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2, cv2.LINE_AA)
-
-    cv2.putText(image,
-                "Elapsed Time:" + '{:.1f}'.format(elapsed_time * 1000) + "ms",
+            key = cv2.waitKey(1)
+            if key == 27: # ESC
+                break
+            
+            cv2.putText(img,
+                "FPS:" + '{:.1f}'.format(1/(time.time()-sTime)) + "ms",
                 (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2,
                 cv2.LINE_AA)
 
-    return image
+            tags = self.detectTags(img)
 
+            rendered = self.draw_tags(img, tags)
 
-if __name__ == '__main__':
-    main()
+            cv2.imshow("April Tag Detection", rendered)
+
+        cap.release(0)
+        cv2.destroyAllWindows()
+
+        
+
+detector = AprilTag()    
+
+if __name__ == "__main__":
+    detector.main()
