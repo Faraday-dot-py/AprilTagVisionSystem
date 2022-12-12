@@ -2,3 +2,5 @@ opencv-python~=4.6.0.66
 pynetworktables~=2021.0.0
 pupil-apriltags
 opencv-python
+numpy~=1.23.4
+Pillow~=9.0.1

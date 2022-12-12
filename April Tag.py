@@ -68,7 +68,7 @@ class AprilTag:
 
         return image
 
-    def getImage(self, enhancementFactor = 1):
+    def getImage(self):
         # Read the captured image
         ret, image = self.cap.read()
 
@@ -76,7 +76,12 @@ class AprilTag:
         if not ret:
             raise SystemExit("Ret not found [Im on line 55 :)]")
 
+        return image;
+
+    def getEditedImage(self, enhancementFactor = 1):
         # Convert to grayscale
+        image = self.getImage()
+
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         # Convert cv2 image to a format PIL can understand
@@ -96,14 +101,14 @@ class AprilTag:
     def main(self):
         while True:
             sTime = time.time()
-            img = self.getImage()
+            img = self.getEditedImage()
 
             key = cv2.waitKey(1)
             if key == 27: # ESC
                 break
             
             cv2.putText(img,
-                "FPS:" + '{:.1f}'.format(1/(time.time()-sTime)) + "ms",
+                "FPS:" + '{:.1f}'.format(1/(time.time()-sTime)),
                 (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2,
                 cv2.LINE_AA)
 
@@ -113,7 +118,7 @@ class AprilTag:
 
             cv2.imshow("April Tag Detection", rendered)
 
-        cap.release(0)
+        self.cap.release(0)
         cv2.destroyAllWindows()
 
         
