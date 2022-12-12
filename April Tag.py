@@ -42,6 +42,9 @@ class AprilTag:
 
         self.cap = cv2.VideoCapture(cameraChannel)
 
+    def createText(self, img, text, x ,y):
+        cv2.putText(img, text, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2, cv2.LINE_AA)
+
     def detectTags(self, img, maxTags = -1):
         return self.detector.detect(img)
 
@@ -81,7 +84,7 @@ class AprilTag:
 
         return image;
 
-    def getEditedImage(self, enhancementFactor = 1):
+    def getProcessedImage(self, enhancementFactor = 1):
         # Convert to grayscale
         image = self.getImage()
 
@@ -104,16 +107,16 @@ class AprilTag:
     def main(self):
         while True:
             sTime = time.time()
-            img = self.getEditedImage()
+            img = self.getProcessedImage()
 
             key = cv2.waitKey(1)
             if key == 27: # ESC
                 break
+
+
             
-            cv2.putText(img,
-                "FPS:" + '{:.1f}'.format(1/(time.time()-sTime)),
-                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2,
-                cv2.LINE_AA)
+            self.createText(img, "FPS: " + str(round(1.0 / (time.time() - sTime))), 10, 30)
+
 
             tags = self.detectTags(img)
 
