@@ -19,6 +19,9 @@ class AprilTag:
     Float   quad_sigma:         Intensity of the low-pass blur (average out rapid chanegs in intensity)  - default 0.0
     Integer refine_edges:       How "loose" the edge detection is                                        - default 1
     Float   decode_sharpening:  How much sharpening is done                                              - default 0.25
+    
+    More information can be found here (uses similar terms):
+    https://docs.photonvision.org/en/latest/docs/getting-started/pipeline-tuning/apriltag-tuning.html#target-family 
     """
 
     def __init__(self,
