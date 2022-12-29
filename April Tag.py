@@ -5,8 +5,9 @@ import cv2
 from pupil_apriltags import Detector
 import numpy as np
 from PIL import Image, ImageEnhance
+from time import process_time as proc_time
 
-
+logTimes = True
 
 class AprilTag:
     """
@@ -85,45 +86,95 @@ class AprilTag:
         return image;
 
     def getProcessedImage(self, enhancementFactor = 1):
-        # Convert to grayscale
+        
+        if logTimes: print("\n-------------------------------------------------------\n")
+        
+        startTime = time.time()
         image = self.getImage()
-
+        endTime = time.time()
+        if logTimes: print(f"Getting the image: {endTime-startTime}")
+        
+        # Convert to grayscale
+        startTime = time.time()
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        endTime = time.time()
+        if logTimes: print(f"Grayscale conversion: {endTime-startTime}")
 
-        # Convert cv2 image to a format PIL can understand
+        # Convert cv2 image to a format pillow can understand
+        startTime = time.time()
         im_pil = Image.fromarray(gray)
+        endTime = time.time()
+        if logTimes: print(f"Pillow conversion: {endTime-startTime}")
+
 
         # Create an instance of the image enhancer
+        startTime = time.time()
         enhancer = ImageEnhance.Contrast(im_pil)
+        endTime = time.time()
+        if logTimes: print(f"Image enhancer init: {endTime-startTime}")
+
 
         # Enhance image with the wonderful PIL library <3
+        startTime = time.time()
         enhanced = enhancer.enhance(enhancementFactor)
+        endTime = time.time()
+        if logTimes: print(f"Image enhancement: {endTime-startTime}")
+
 
         # Convert back to cv2 format
+        startTime = time.time()
         im_np = np.asarray(enhanced)
+        endTime = time.time()
+        if logTimes: print(f"Cv2 conversion {endTime-startTime}")
+	
+        if logTimes: print("\n-------------------------------------------------------\n")
 
         return im_np
 
     def main(self):
         while True:
             sTime = time.time()
-            img = self.getProcessedImage()
+            total = 0
 
+            startTime1 = time.time()
+            img = self.getProcessedImage()
+            endTime1 = time.time()
+            total += (endTime1-startTime1)
+            if logTimes: print(f"Total of getProcessedImage --> {endTime1-startTime1}")
+
+            startTime1 = time.time()
             key = cv2.waitKey(1)
             if key == 27: # ESC
                 break
+            endTime1 = time.time()
+            total += (endTime1-startTime1)
+            if logTimes: print(f"Total of waitkey --> {endTime1-startTime1}")
 
+            startTime1 = time.time()
+            self.createText(img, "FPS: " + str(round(1.0 / (time.time() - sTime), 2)), 10, 30)
+            endTime1 = time.time()
+            total += (endTime1-startTime1)
+            if logTimes: print(f"Total of createText --> {endTime1-startTime1}")
 
-            
-            self.createText(img, "FPS: " + str(round(1.0 / (time.time() - sTime))), 10, 30)
-
-
+            startTime1 = time.time()
             tags = self.detectTags(img)
+            endTime1 = time.time()
+            total += (endTime1-startTime1)
+            if logTimes: print(f"Total of detectTags --> {endTime1-startTime1}")
 
+            startTime1 = time.time()
             rendered = self.draw_tags(img, tags)
-
+            endTime1 = time.time()
+            total += (endTime1-startTime1)
+            if logTimes: print(f"Total of draw_tags --> {endTime1-startTime1}") 
+            
+            startTime1 = time.time()
             cv2.imshow("April Tag Detection", rendered)
+            endTime1 = time.time()  
+            total += (endTime1-startTime1)          
+            if logTimes: print(f"Total of image show --> {endTime1-startTime1}")
 
+            if logTimes: print(f"Total process time --> {time.time() - sTime}, adds to --> {total}")
         self.cap.release(0)
         cv2.destroyAllWindows()
 
